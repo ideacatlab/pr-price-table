@@ -1,65 +1,10 @@
 /* =============================================================================
  * <price-table> / <wix-default-custom-element> — secțiunea de prețuri
  * Pregatire Rezidentiat. Wix Custom Element (Server URL source).
- * Date REALE incluse ca DEFAULT; pot fi suprascrise din CMS prin atributul `prices`.
+ * Date 100% din CMS (colectiile Preturi + Pachete). Fara date hard-codate: daca nu exista colectie/date, nu se afiseaza nimic.
  * ========================================================================== */
 
-const DEFAULT_DATA = [
-  { card: 1, titlu: 'Pregatire in 12 luni', pretLunar: '2.304,17 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 11 luni', pretLunar: '2.513,64 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 10 luni', pretLunar: '2.765 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 9 luni',  pretLunar: '3.072,22 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 8 luni',  pretLunar: '3.456,25 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 7 luni',  pretLunar: '3.950 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 6 luni',  pretLunar: '4.608,33 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 5 luni',  pretLunar: '5.530 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 4 luni',  pretLunar: '6.912,50 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 3 luni',  pretLunar: '9.216,67 lei/luna' },
-  { card: 1, titlu: 'Pregatire in 2 luni',  pretLunar: '13.825 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 12 luni', pretLunar: '3.062,50 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 11 luni', pretLunar: '3.340,91 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 10 luni', pretLunar: '3.675 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 9 luni',  pretLunar: '4.083,33 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 8 luni',  pretLunar: '4.593,75 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 7 luni',  pretLunar: '5.250 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 6 luni',  pretLunar: '6.125 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 5 luni',  pretLunar: '7.350 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 4 luni',  pretLunar: '9.187,50 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 3 luni',  pretLunar: '12.250 lei/luna' },
-  { card: 2, titlu: 'Pregatire in 2 luni',  pretLunar: '18.375 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 24 luni', pretLunar: '2.172,92 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 23 luni', pretLunar: '2.267,39 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 22 luni', pretLunar: '2.370,45 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 21 luni', pretLunar: '2.483,33 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 20 luni', pretLunar: '2.607,50 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 19 luni', pretLunar: '2.744,74 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 18 luni', pretLunar: '2.897,22 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 17 luni', pretLunar: '3.067,65 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 16 luni', pretLunar: '3.259,38 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 15 luni', pretLunar: '3.476,67 lei/luna' },
-  { card: 3, titlu: 'Pregatire in 14 luni', pretLunar: '3.725 lei/luna' },
-];
 
-const META = {
-  1: {
-    title: 'Focus 2x',
-    badge: '',
-    desc: 'Program echilibrat, cu structură clară pe capitole, întâlniri individuale periodice și taskuri precise — recuperezi golurile și ajungi la un nivel competitiv înainte de examen.',
-    stats: [{ i: '🎯', t: '79 ședințe individuale' }, { i: '🔄', t: '2 treceri prin materie' }],
-  },
-  2: {
-    title: 'Boost 3x',
-    badge: 'Cel mai ales 🧠',
-    desc: 'Program intensiv pentru cei care vor maximum din timpul rămas. Plan eficient, cu monitorizare individuală, ca să nu pierzi niciun minut de învățat.',
-    stats: [{ i: '🎯', t: '105 ședințe individuale' }, { i: '🔄', t: '3 treceri prin materie' }],
-  },
-  3: {
-    title: 'Ascensiune',
-    badge: '',
-    desc: 'Program pe termen lung pentru studenți de an 4–5 care vor să ajungă la examen fără panică. Temelie construită din timp, cu ritm adaptat facultății și ghidaj individual.',
-    stats: [{ i: '🎯', t: '149 ședințe individuale' }, { i: '🔄', t: '4 treceri prin materie' }],
-  },
-};
 
 // CTA — WhatsApp-ul afișat pe site (hero): 0771 108 786
 const WA = 'https://wa.me/40771108786';
@@ -81,8 +26,8 @@ class PriceTable extends HTMLElement {
 
   get data() {
     const raw = this.getAttribute('prices');
-    if (raw) { try { const v = JSON.parse(raw); if (Array.isArray(v) && v.length) return v; } catch (e) {} }
-    return DEFAULT_DATA;
+    if (raw) { try { const v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch (e) {} }
+    return [];
   }
   get titlesOverride() {
     const raw = this.getAttribute('titles');
@@ -123,7 +68,7 @@ class PriceTable extends HTMLElement {
       rows.forEach(r => { const m = monthsOf(r.titlu), p = parsePrice(r.pretLunar); if (m && isFinite(p)) { const t = Math.round(m * p); freq[t] = (freq[t] || 0) + 1; } });
       const total = Object.keys(freq).sort((a, b) => freq[b] - freq[a])[0];
       const mm = this.metaMap;
-      const meta = (mm && mm[c]) || META[c] || {};
+      const meta = (mm && mm[c]) || {};
       return {
         id: c,
         title: (titles && titles[i]) || meta.title || `Pachet ${c}`,
@@ -141,6 +86,7 @@ class PriceTable extends HTMLElement {
 
   render() {
     const cards = this._cards();
+    if (!cards.length) { this.shadowRoot.innerHTML = ""; return; }  // CMS-only: no data => render nothing
     const featuredId = this.featured;
     const href = this.ctaHref;
     // Default the open tab (mobile/tablet) to the featured / "most popular" card.
