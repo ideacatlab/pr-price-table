@@ -74,7 +74,7 @@ function monthsOf(titlu) { const m = String(titlu).match(/(\d+)\s*luni/i); retur
 function roLei(n) { try { return Number(n).toLocaleString('ro-RO'); } catch (e) { return String(n); } }
 
 class PriceTable extends HTMLElement {
-  static get observedAttributes() { return ['prices', 'titles', 'featured', 'bg', 'cta']; }
+  static get observedAttributes() { return ['prices', 'titles', 'featured', 'bg', 'cta', 'meta']; }
   constructor() { super(); this.attachShadow({ mode: 'open' }); this._active = null; }
   connectedCallback() { this.render(); }
   attributeChangedCallback() { if (this.shadowRoot) this.render(); }
@@ -89,7 +89,24 @@ class PriceTable extends HTMLElement {
     if (raw) { try { const v = JSON.parse(raw); if (Array.isArray(v) && v.length) return v; } catch (e) {} }
     return null;
   }
-  get featured() { return Number(this.getAttribute('featured') || 2); }
+  // Card-level design data from the CMS (Pachete collection), overriding the built-in META.
+  // Expected JSON: [{card, title, desc, badge, recomandat, stats:[..], cta}, ...]
+  get metaMap() {
+    const raw = this.getAttribute('meta');
+    if (raw) { try {
+      const v = JSON.parse(raw);
+      if (Array.isArray(v) && v.length) { const m = {}; v.forEach(o => { if (o && o.card != null) m[Number(o.card)] = o; }); return m; }
+    } catch (e) {} }
+    return null;
+  }
+  get featured() {
+    const mm = this.metaMap;
+    if (mm) {
+      const rec = Object.keys(mm).map(Number).find(c => { const v = mm[c] && mm[c].recomandat; return v === true || v === 'true' || v === 1 || v === '1'; });
+      if (rec) return rec;
+    }
+    return Number(this.getAttribute('featured') || 2);
+  }
   get ctaHref() { return this.getAttribute('cta') || WA; }
   // implicit transparent — componenta stă în secțiunea roșie existentă a paginii (fără cusături)
   get bg() { return this.getAttribute('bg') || 'transparent'; }
@@ -105,13 +122,15 @@ class PriceTable extends HTMLElement {
       const freq = {};
       rows.forEach(r => { const m = monthsOf(r.titlu), p = parsePrice(r.pretLunar); if (m && isFinite(p)) { const t = Math.round(m * p); freq[t] = (freq[t] || 0) + 1; } });
       const total = Object.keys(freq).sort((a, b) => freq[b] - freq[a])[0];
-      const meta = META[c] || {};
+      const mm = this.metaMap;
+      const meta = (mm && mm[c]) || META[c] || {};
       return {
         id: c,
         title: (titles && titles[i]) || meta.title || `Pachet ${c}`,
         badge: meta.badge || '',
         desc: meta.desc || '',
         stats: meta.stats || [],
+        cta: meta.cta || this.ctaHref,
         rows, minIdx,
         total: total ? roLei(total) : '',
         minMonthly: (rows[minIdx] && rows[minIdx].pretLunar) || '',
@@ -144,13 +163,13 @@ class PriceTable extends HTMLElement {
           ${c.total ? `<div class="phead__total">${c.total} lei <span>total</span></div>` : ''}
           ${c.minMonthly ? `<div class="phead__from">în rate, de la <b>${c.minMonthly}</b></div>` : ''}
         </div>
-        <a class="cta" href="${href}" target="_blank" rel="noopener">Vreau acest plan</a>
+        <a class="cta" href="${c.cta}" target="_blank" rel="noopener">Vreau acest plan</a>
         <div class="pills-h">toate variantele de plată în rate</div>
         <div class="pills">
           ${c.rows.map((r, idx) => pill(r, idx === c.minIdx)).join('')}
         </div>
         ${c.stats.length ? `<div class="stats">
-          ${c.stats.map(s => `<div class="stat"><span class="stat__i">${s.i}</span><span>${s.t}</span></div>`).join('')}
+          ${c.stats.map(s => { const txt = (typeof s === 'string') ? s : `${s.i || ''} ${s.t || ''}`.trim(); return `<div class="stat"><span>${txt}</span></div>`; }).join('')}
         </div>` : ''}
       </article>`;
 
