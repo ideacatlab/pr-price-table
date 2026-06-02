@@ -75,9 +75,45 @@ function roLei(n) { try { return Number(n).toLocaleString('ro-RO'); } catch (e) 
 
 class PriceTable extends HTMLElement {
   static get observedAttributes() { return ['prices', 'titles', 'featured', 'bg', 'cta']; }
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this._active = 1; }
-  connectedCallback() { this.render(); }
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._active = 1;
+    this._recenter = this._recenter.bind(this);
+  }
+  connectedCallback() {
+    this.render();
+    // The element may be placed off-centre inside a fixed Wix grid cell / legacy
+    // section. Centre our content to the viewport regardless of the host's offset.
+    window.addEventListener('resize', this._recenter, { passive: true });
+    try { this._ro = new ResizeObserver(this._recenter); this._ro.observe(document.documentElement); } catch (e) {}
+    [60, 200, 600, 1500].forEach(t => setTimeout(this._recenter, t));
+  }
+  disconnectedCallback() {
+    window.removeEventListener('resize', this._recenter);
+    if (this._ro) { try { this._ro.disconnect(); } catch (e) {} this._ro = null; }
+  }
   attributeChangedCallback() { if (this.shadowRoot) this.render(); }
+
+  // Shift our content so it is centred on the viewport even when the host element
+  // itself is offset (clamped so the content never spills outside the host box).
+  _recenter() {
+    if (!this.shadowRoot) return;
+    const sec = this.shadowRoot.querySelector('.section');
+    const wrap = this.shadowRoot.querySelector('.wrap');
+    if (!sec || !wrap) return;
+    sec.style.transform = 'none';
+    const host = this.getBoundingClientRect();
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    if (!host.width || !vw) return;
+    const cw = wrap.getBoundingClientRect().width;            // real content width
+    const desired = vw / 2 - (host.left + host.width / 2);    // shift to centre on viewport
+    const sMin = (cw - host.width) / 2;                       // furthest left w/o clipping
+    const sMax = (host.width - cw) / 2;                       // furthest right w/o clipping
+    // If the host is narrower than the content there is no slack to move within: leave as-is.
+    const shift = (sMin > sMax) ? 0 : Math.max(sMin, Math.min(sMax, desired));
+    sec.style.transform = `translateX(${Math.round(shift)}px)`;
+  }
 
   get data() {
     const raw = this.getAttribute('prices');
@@ -269,6 +305,9 @@ class PriceTable extends HTMLElement {
     this.shadowRoot.querySelectorAll('.tab').forEach(btn => {
       btn.addEventListener('click', () => { this._active = Number(btn.dataset.tab); this.render(); });
     });
+
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(this._recenter);
+    else this._recenter();
   }
 }
 
