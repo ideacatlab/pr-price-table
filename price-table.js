@@ -75,7 +75,7 @@ function roLei(n) { try { return Number(n).toLocaleString('ro-RO'); } catch (e) 
 
 class PriceTable extends HTMLElement {
   static get observedAttributes() { return ['prices', 'titles', 'featured', 'bg', 'cta']; }
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this._active = 1; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); this._active = null; }
   connectedCallback() { this.render(); }
   attributeChangedCallback() { if (this.shadowRoot) this.render(); }
 
@@ -124,7 +124,9 @@ class PriceTable extends HTMLElement {
     const cards = this._cards();
     const featuredId = this.featured;
     const href = this.ctaHref;
-    if (!cards.some(c => c.id === this._active)) this._active = cards[0] ? cards[0].id : 1;
+    // Default the open tab (mobile/tablet) to the featured / "most popular" card.
+    if (this._active == null || !cards.some(c => c.id === this._active))
+      this._active = cards.some(c => c.id === featuredId) ? featuredId : (cards[0] ? cards[0].id : 1);
 
     const pill = (r, hot) => `
       <div class="pill${hot ? ' pill--hot' : ''}">
