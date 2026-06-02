@@ -75,7 +75,7 @@ function roLei(n) { try { return Number(n).toLocaleString('ro-RO'); } catch (e) 
 
 class PriceTable extends HTMLElement {
   static get observedAttributes() { return ['prices', 'titles', 'featured', 'bg', 'cta', 'meta']; }
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this._active = null; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); this._active = null; this._userPicked = false; }
   connectedCallback() { this.render(); }
   attributeChangedCallback() { if (this.shadowRoot) this.render(); }
 
@@ -144,7 +144,8 @@ class PriceTable extends HTMLElement {
     const featuredId = this.featured;
     const href = this.ctaHref;
     // Default the open tab (mobile/tablet) to the featured / "most popular" card.
-    if (this._active == null || !cards.some(c => c.id === this._active))
+    // Keep following the featured card (even if CMS data arrives late) until the user taps a tab.
+    if (!this._userPicked || !cards.some(c => c.id === this._active))
       this._active = cards.some(c => c.id === featuredId) ? featuredId : (cards[0] ? cards[0].id : 1);
 
     const pill = (r, hot) => `
@@ -288,7 +289,7 @@ class PriceTable extends HTMLElement {
       </div>`;
 
     this.shadowRoot.querySelectorAll('.tab').forEach(btn => {
-      btn.addEventListener('click', () => { this._active = Number(btn.dataset.tab); this.render(); });
+      btn.addEventListener('click', () => { this._userPicked = true; this._active = Number(btn.dataset.tab); this.render(); });
     });
   }
 }
